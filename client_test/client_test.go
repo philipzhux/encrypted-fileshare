@@ -549,23 +549,23 @@ var _ = Describe("Client Tests", func() {
 			alice, err = client.InitUser("alice", defaultPassword)
 			Expect(err).To(BeNil())
 
-			err = alice.StoreFile(largeFile, []byte(strings.Repeat("#", 1<<26))) //64MB
+			err = alice.StoreFile(largeFile, []byte(strings.Repeat("#", 1<<27))) //128MB
 			Expect(err).To(BeNil())
 
 			old_bw := userlib.DatastoreGetBandwidth()
-			err = alice.AppendToFile(largeFile, []byte(strings.Repeat("#", 1))) //64MB
+			err = alice.AppendToFile(largeFile, []byte(strings.Repeat("#", 1<<7))) //128B
 			Expect(err).To(BeNil())
 			bw_large := userlib.DatastoreGetBandwidth() - old_bw
 
-			err = alice.StoreFile(smallFile, []byte(strings.Repeat("#", 1<<10))) //1KB
+			err = alice.StoreFile(smallFile, []byte(strings.Repeat("#", 1<<7))) //128B
 			Expect(err).To(BeNil())
 
 			old_bw = userlib.DatastoreGetBandwidth()
-			err = alice.AppendToFile(smallFile, []byte(strings.Repeat("#", 1))) //64MB
+			err = alice.AppendToFile(smallFile, []byte(strings.Repeat("#", 1<<9))) //512B
 			Expect(err).To(BeNil())
 			bw_small := userlib.DatastoreGetBandwidth() - old_bw
 
-			Expect(bw_large>>2 < bw_small).To(Equal(true))
+			Expect(bw_large < bw_small).To(Equal(true))
 
 		})
 	})
