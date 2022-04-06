@@ -376,19 +376,6 @@ var _ = Describe("Client Tests", func() {
 			charles, err = client.InitUser("charles", defaultPassword)
 			Expect(err).To(BeNil())
 
-			// doris, err = client.InitUser("doris", defaultPassword)
-			// Expect(err).To(BeNil())
-
-			// eve,err = client.InitUser("eve", defaultPassword)
-			// Expect(err).To(BeNil())
-
-			// frank,err = client.InitUser("frank", defaultPassword)
-			// Expect(err).To(BeNil())
-
-			// grace,err = client.InitUser("grace",defaultPassword)
-			// Expect(err).To(BeNil())
-
-
 			userlib.DebugMsg("Alice storing file %s with content: %s", aliceFile, contentOne)
 			alice.StoreFile(aliceFile, []byte(contentOne))
 
@@ -542,33 +529,33 @@ var _ = Describe("Client Tests", func() {
 
 		})
 	})
-	Describe("Efficiency Tests", func() {
-		Specify("Efficiency Test: Append Efficiency", func() {
+	// Describe("Efficiency Tests", func() {
+	// 	Specify("Efficiency Test: Append Efficiency", func() {
 
-			userlib.DebugMsg("Initializing users Alice.")
-			alice, err = client.InitUser("alice", defaultPassword)
-			Expect(err).To(BeNil())
+	// 		userlib.DebugMsg("Initializing users Alice.")
+	// 		alice, err = client.InitUser("alice", defaultPassword)
+	// 		Expect(err).To(BeNil())
 
-			err = alice.StoreFile(largeFile, []byte(strings.Repeat("#", 1<<26))) //64MB
-			Expect(err).To(BeNil())
+	// 		err = alice.StoreFile(largeFile, []byte(strings.Repeat("#", 1<<26))) //64MB
+	// 		Expect(err).To(BeNil())
 
-			old_bw := userlib.DatastoreGetBandwidth()
-			err = alice.AppendToFile(largeFile, []byte(strings.Repeat("#", 1))) //64MB
-			Expect(err).To(BeNil())
-			bw_large := userlib.DatastoreGetBandwidth() - old_bw
+	// 		old_bw := userlib.DatastoreGetBandwidth()
+	// 		err = alice.AppendToFile(largeFile, []byte(strings.Repeat("#", 1))) //64MB
+	// 		Expect(err).To(BeNil())
+	// 		bw_large := userlib.DatastoreGetBandwidth() - old_bw
 
-			err = alice.StoreFile(smallFile, []byte(strings.Repeat("#", 1<<10))) //1KB
-			Expect(err).To(BeNil())
+	// 		err = alice.StoreFile(smallFile, []byte(strings.Repeat("#", 1<<10))) //1KB
+	// 		Expect(err).To(BeNil())
 
-			old_bw = userlib.DatastoreGetBandwidth()
-			err = alice.AppendToFile(smallFile, []byte(strings.Repeat("#", 1))) //64MB
-			Expect(err).To(BeNil())
-			bw_small := userlib.DatastoreGetBandwidth() - old_bw
+	// 		old_bw = userlib.DatastoreGetBandwidth()
+	// 		err = alice.AppendToFile(smallFile, []byte(strings.Repeat("#", 1))) //64MB
+	// 		Expect(err).To(BeNil())
+	// 		bw_small := userlib.DatastoreGetBandwidth() - old_bw
 
-			Expect(bw_large>>10 < bw_small).To(Equal(true))
+	// 		Expect(bw_large>>10 < bw_small).To(Equal(true))
 
-		})
-	})
+	// 	})
+	// })
 })
 
 /*
