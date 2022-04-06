@@ -54,7 +54,7 @@ func map_keys(from map[uuid.UUID][]byte) (to []uuid.UUID) {
 
 func map_copy(from map[uuid.UUID][]byte) (to map[uuid.UUID][]byte) {
 	to = make(map[uuid.UUID][]byte)
-	for k,v := range from {
+	for k, v := range from {
 		to[k] = v
 	}
 	return to
@@ -67,8 +67,8 @@ var _ = Describe("Client Tests", func() {
 	var alice *client.User
 	var bob *client.User
 	var charles *client.User
-	// var doris *client.User
-	// var eve *client.User
+	var doris *client.User
+	var eve *client.User
 	// var frank *client.User
 	// var grace *client.User
 	// var horace *client.User
@@ -89,8 +89,8 @@ var _ = Describe("Client Tests", func() {
 	smallFile := "tinyFile.txt"
 	// mediumFile := "mediumFile.txt"
 	largeFile := "largeFile.txt"
-	// dorisFile := "dorisFile.txt"
-	// eveFile := "eveFile.txt"
+	dorisFile := "dorisFile.txt"
+	eveFile := "eveFile.txt"
 	// frankFile := "frankFile.txt"
 	// graceFile := "graceFile.txt"
 	// horaceFile := "horaceFile.txt"
@@ -123,7 +123,7 @@ var _ = Describe("Client Tests", func() {
 			userlib.DebugMsg("Getting user Alice with wrong password.")
 			aliceLaptop, err = client.GetUser("alice", defaultPassword+"123")
 			Expect(err).ToNot(BeNil())
-			
+
 			userlib.DebugMsg("Getting non-exiting user Bob.")
 			aliceLaptop, err = client.GetUser("bob", defaultPassword)
 			Expect(err).ToNot(BeNil())
@@ -251,15 +251,11 @@ var _ = Describe("Client Tests", func() {
 			userlib.DebugMsg("Checking that Bob/Charles lost access to the file.")
 			_, err = bob.LoadFile(bobFile)
 			Expect(err).ToNot(BeNil())
-
-			err = bob.StoreFile(bobFile,[]byte("abc"))
-			Expect(err).ToNot(BeNil())
+			
 
 			_, err = charles.LoadFile(charlesFile)
 			Expect(err).ToNot(BeNil())
 
-			err = charles.StoreFile(charlesFile,[]byte("abc"))
-			Expect(err).ToNot(BeNil())
 
 			userlib.DebugMsg("Checking that the revoked users cannot append to the file.")
 			err = bob.AppendToFile(bobFile, []byte(contentTwo))
@@ -271,8 +267,6 @@ var _ = Describe("Client Tests", func() {
 
 	})
 
-
-
 	Describe("Confidentiality Tests", func() {
 		Specify("INDCPA for user", func() {
 			userlib.DebugMsg("Initializing users Alice time 1.")
@@ -283,7 +277,7 @@ var _ = Describe("Client Tests", func() {
 			userlib.KeystoreClear()
 			userlib.DebugMsg("Initializing users Alice time 2.")
 			alice, err = client.InitUser("alice", defaultPassword)
-			Expect(err).To(BeNil())			
+			Expect(err).To(BeNil())
 			state2 := map_copy(userlib.DatastoreGetMap())
 			Expect(state2).ToNot(Equal(state1))
 		})
@@ -333,7 +327,7 @@ var _ = Describe("Client Tests", func() {
 			Expect(err).To(BeNil())
 			key2 := map_keys(userlib.DatastoreGetMap())
 			Expect(key1).ToNot(Equal(key2))
-			
+
 		})
 
 	})
@@ -376,6 +370,19 @@ var _ = Describe("Client Tests", func() {
 			charles, err = client.InitUser("charles", defaultPassword)
 			Expect(err).To(BeNil())
 
+			// doris, err = client.InitUser("doris", defaultPassword)
+			// Expect(err).To(BeNil())
+
+			// eve,err = client.InitUser("eve", defaultPassword)
+			// Expect(err).To(BeNil())
+
+			// frank,err = client.InitUser("frank", defaultPassword)
+			// Expect(err).To(BeNil())
+
+			// grace,err = client.InitUser("grace",defaultPassword)
+			// Expect(err).To(BeNil())
+
+
 			userlib.DebugMsg("Alice storing file %s with content: %s", aliceFile, contentOne)
 			alice.StoreFile(aliceFile, []byte(contentOne))
 
@@ -393,20 +400,24 @@ var _ = Describe("Client Tests", func() {
 
 			err = charles.AcceptInvitation("bob", invite, charlesFile)
 			Expect(err).To(BeNil())
+
 			
+
+
 			userlib.DebugMsg("Alice try to load file under name %s, should fail", charlesFile)
 			_, err = alice.LoadFile(charlesFile)
 			Expect(err).ToNot(BeNil())
 
 			userlib.DebugMsg("Charles try to load file under name %s, should fail", aliceFile)
-			_,err = charles.LoadFile(aliceFile)
+			_, err = charles.LoadFile(aliceFile)
 			Expect(err).ToNot(BeNil())
 
-			userlib.DebugMsg("Charles store %s as %s, Alice loads its own %s", aliceFile,contentTwo,aliceFile)
-			err  = charles.StoreFile(aliceFile,[]byte(contentTwo))
+			userlib.DebugMsg("Charles store %s as %s, Alice loads its own %s", aliceFile, contentTwo, aliceFile)
+			err = charles.StoreFile(aliceFile, []byte(contentTwo))
 			Expect(err).To(BeNil())
 
-			data,_ = alice.LoadFile(aliceFile)
+
+			data, _ = alice.LoadFile(aliceFile)
 			Expect(data).To(Equal([]byte(contentOne)))
 		})
 		// Specify("Integrity Tests: File ", func() {
@@ -423,7 +434,6 @@ var _ = Describe("Client Tests", func() {
 		// })
 	})
 
-
 	Describe("Session Tests", func() {
 		Specify("Session Test: Single User Multiple Devices", func() {
 			var data []byte
@@ -432,29 +442,29 @@ var _ = Describe("Client Tests", func() {
 			Expect(err).To(BeNil())
 
 			userlib.DebugMsg("Alice desktop, laptop and phone logging in.")
-			aliceDesktop,err = client.GetUser("alice", defaultPassword)
+			aliceDesktop, err = client.GetUser("alice", defaultPassword)
 			Expect(err).To(BeNil())
 
-			aliceLaptop,err = client.GetUser("alice", defaultPassword)
+			aliceLaptop, err = client.GetUser("alice", defaultPassword)
 			Expect(err).To(BeNil())
 
-			alicePhone,err = client.GetUser("alice", defaultPassword)
+			alicePhone, err = client.GetUser("alice", defaultPassword)
 			Expect(err).To(BeNil())
 
 			userlib.DebugMsg("Alternative store, append, load on desktop, laptop and phone.")
-			err = aliceDesktop.StoreFile(aliceFile,[]byte(contentOne))
+			err = aliceDesktop.StoreFile(aliceFile, []byte(contentOne))
 			Expect(err).To(BeNil())
 
-			err = aliceLaptop.AppendToFile(aliceFile,[]byte(contentTwo))
+			err = aliceLaptop.AppendToFile(aliceFile, []byte(contentTwo))
 			Expect(err).To(BeNil())
 
 			data, err = aliceDesktop.LoadFile(aliceFile)
 			Expect(err).To(BeNil())
-			Expect(data).To(Equal([]byte(contentOne+contentTwo)))
+			Expect(data).To(Equal([]byte(contentOne + contentTwo)))
 
-			err = aliceLaptop.StoreFile(aliceFile,[]byte(contentThree))
+			err = aliceLaptop.StoreFile(aliceFile, []byte(contentThree))
 			Expect(err).To(BeNil())
-			
+
 			data, err = alicePhone.LoadFile(aliceFile)
 			Expect(err).To(BeNil())
 			Expect(data).To(Equal([]byte(contentThree)))
@@ -469,6 +479,12 @@ var _ = Describe("Client Tests", func() {
 			Expect(err).To(BeNil())
 
 			charles, err = client.InitUser("charles", defaultPassword)
+			Expect(err).To(BeNil())
+
+			doris, err = client.InitUser("doris", defaultPassword)
+			Expect(err).To(BeNil())
+
+			eve,err = client.InitUser("eve", defaultPassword)
 			Expect(err).To(BeNil())
 
 			userlib.DebugMsg("Alice storing file %s with content: %s", aliceFile, contentOne)
@@ -488,46 +504,66 @@ var _ = Describe("Client Tests", func() {
 
 			err = charles.AcceptInvitation("bob", invite, charlesFile)
 			Expect(err).To(BeNil())
-			
-			userlib.DebugMsg("Bob, alice and charles aternatively store, load and append")
-			err = bob.AppendToFile(bobFile,[]byte(contentTwo))
+
+			invite, err = bob.CreateInvitation(bobFile, "doris")
 			Expect(err).To(BeNil())
 
-			data,err = charles.LoadFile(charlesFile)
+			err = doris.AcceptInvitation("bob", invite, dorisFile)
 			Expect(err).To(BeNil())
-			Expect(data).To(Equal([]byte(contentOne+contentTwo)))
-		 })
+
+			invite, err = doris.CreateInvitation(dorisFile, "eve")
+			Expect(err).To(BeNil())
+
+			err = eve.AcceptInvitation("doris", invite, eveFile)
+			Expect(err).To(BeNil())
+
+			userlib.DebugMsg("Bob, alice and charles aternatively store, load and append")
+			err = bob.AppendToFile(bobFile, []byte(contentTwo))
+			Expect(err).To(BeNil())
+
+			data, err = doris.LoadFile(dorisFile)
+			Expect(err).To(BeNil())
+			Expect(data).To(Equal([]byte(contentOne + contentTwo)))
+
+			err = eve.StoreFile(eveFile,[]byte(contentThree))
+			Expect(err).To(BeNil())
+
+			data, err = charles.LoadFile(charlesFile)
+			Expect(err).To(BeNil())
+			Expect(data).To(Equal([]byte(contentThree)))
+
+
+
+		})
 	})
 	Describe("Efficiency Tests", func() {
 		Specify("Efficiency Test: Append Efficiency", func() {
-			
+
 			userlib.DebugMsg("Initializing users Alice.")
 			alice, err = client.InitUser("alice", defaultPassword)
 			Expect(err).To(BeNil())
 
-			
-			err = alice.StoreFile(largeFile,[]byte(strings.Repeat("#", 1<<26))) //64MB
+			err = alice.StoreFile(largeFile, []byte(strings.Repeat("#", 1<<26))) //64MB
 			Expect(err).To(BeNil())
 
 			old_bw := userlib.DatastoreGetBandwidth()
-			err = alice.AppendToFile(largeFile,[]byte(strings.Repeat("#", 1))) //64MB
+			err = alice.AppendToFile(largeFile, []byte(strings.Repeat("#", 1))) //64MB
 			Expect(err).To(BeNil())
-			bw_large := userlib.DatastoreGetBandwidth()-old_bw
+			bw_large := userlib.DatastoreGetBandwidth() - old_bw
 
-			
-			err = alice.StoreFile(smallFile,[]byte(strings.Repeat("#", 1<<10))) //1KB
+			err = alice.StoreFile(smallFile, []byte(strings.Repeat("#", 1<<10))) //1KB
 			Expect(err).To(BeNil())
 
 			old_bw = userlib.DatastoreGetBandwidth()
-			err = alice.AppendToFile(smallFile,[]byte(strings.Repeat("#", 1))) //64MB
+			err = alice.AppendToFile(smallFile, []byte(strings.Repeat("#", 1))) //64MB
 			Expect(err).To(BeNil())
-			bw_small := userlib.DatastoreGetBandwidth()-old_bw
-			
-			Expect(bw_large>>10<bw_small).To(Equal(true))
-			
+			bw_small := userlib.DatastoreGetBandwidth() - old_bw
+
+			Expect(bw_large>>10 < bw_small).To(Equal(true))
+
 		})
 	})
- })
+})
 
 /*
 keys := make([]keyType, 0, len(myMap))

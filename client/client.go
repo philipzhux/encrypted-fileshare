@@ -375,7 +375,7 @@ func (userdata *User) searchFile(filename string) (err error, owner string, real
 	if err_s!=nil {
 		real_name_enc, name_err := getAndVerify(fmt.Sprintf("/accepted_share/%s/filename",filename),u.user_uuid_hmac_key,u.user_hmac_master_key)
 		if name_err != nil {
-			return err_s,"","",nil
+			return name_err,"","",nil
 			//return errors.New(strings.ToTitle("Corrupted namespace record")),"","",nil
 		}
 		real_name_b := userlib.SymDec(u.user_share_key[:16],real_name_enc)
@@ -429,6 +429,7 @@ func (userdata *User) overrideFile(filename string, content []byte) (err error) 
 	var file_root_key []byte
 	err, _,filename, file_root_key = u.searchFile(filename)
 	if err!=nil {
+		//return errors.New(strings.ToTitle("search file error at override"))
 		return err
 	}
 	file_uuid_key := first(userlib.HashKDF(file_root_key,[]byte("file_uuid_key")))[:16]
@@ -488,12 +489,12 @@ func (userdata *User) createFile(filename string, content []byte) (err error) {
 
 func (userdata *User) StoreFile(filename string, content []byte) (err error) {
 	u := *userdata
-	var search_name string
-	err, _,search_name, _ = u.searchFile(filename)
+	//var search_name string
+	err, _,_, _ = u.searchFile(filename)
 	if err!=nil {
 		return u.createFile(filename,content)
 	}
-	return u.overrideFile(search_name,content)
+	return u.overrideFile(filename,content)
 	
 }
 
