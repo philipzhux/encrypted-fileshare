@@ -565,7 +565,7 @@ var _ = Describe("Client Tests", func() {
 			Expect(err).To(BeNil())
 			bw_small := userlib.DatastoreGetBandwidth() - old_bw
 
-			Expect(bw_large>>10 < bw_small).To(Equal(true))
+			Expect(bw_large>>2 < bw_small).To(Equal(true))
 
 		})
 	})
