@@ -334,23 +334,29 @@ var _ = Describe("Client Tests", func() {
 
 	Describe("Integrity Tests", func() {
 		Specify("Integrity Tests: User ", func() {
+			ds := userlib.DatastoreGetMap()
 			userlib.DebugMsg("Initializing users Alice time 1.")
 			alice, err = client.InitUser("alice", defaultPassword)
 			Expect(err).To(BeNil())
-			userlib.DebugMsg("Clear datastore.")
-			userlib.DatastoreClear()
+			userlib.DebugMsg("Tamper datastore.")
+			for k := range ds {
+				ds[k] = []byte("randomstuff")
+			}
 			userlib.DebugMsg("Trying to reinitualize users Alice second time.")
 			alice, err = client.InitUser("alice", defaultPassword)
 			Expect(err).ToNot(BeNil())
 		})
 		Specify("Integrity Tests: File ", func() {
+			ds := userlib.DatastoreGetMap()
 			userlib.DebugMsg("Initializing users Alice.")
 			alice, err = client.InitUser("alice", defaultPassword)
 			Expect(err).To(BeNil())
 			userlib.DebugMsg("Alice storing file %s with content: %s, time 1", aliceFile, contentOne)
 			alice.StoreFile(aliceFile, []byte(contentOne))
-			userlib.DebugMsg("Clear datastore.")
-			userlib.DatastoreClear()
+			userlib.DebugMsg("Tamper datastore.")
+			for k := range ds {
+				ds[k] = []byte("randomstuff")
+			}
 			userlib.DebugMsg("Trying to load file")
 			_, err := alice.LoadFile(aliceFile)
 			Expect(err).ToNot(BeNil())

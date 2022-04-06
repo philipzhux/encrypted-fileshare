@@ -835,6 +835,7 @@ func (userdata *User) recursiveRegister(new_file_root_key []byte, share_node Sha
 	setAndHmac(fmt.Sprintf("/%s/share_map/%s",real_name,share_node.Sharee),new_file_uuid_key,new_file_hmac_key,new_list_enc)
 	return userdata.registerFileKey(new_file_root_key,share_node)
 }
+
 func (userdata *User) RevokeAccess(filename string, recipientUsername string) error {
 	u := *userdata
 	var file_root_key []byte
