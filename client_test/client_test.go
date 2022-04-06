@@ -9,7 +9,7 @@ import (
 	_ "encoding/hex"
 	_ "errors"
 	_ "strconv"
-	"strings"
+	// "strings"
 	"testing"
 
 	// A "dot" import is used here so that the functions in the ginko and gomega
@@ -86,9 +86,9 @@ var _ = Describe("Client Tests", func() {
 	bobFile := "bobFile.txt"
 	charlesFile := "charlesFile.txt"
 	// tinyFile := "smallFile.txt"
-	smallFile := "tinyFile.txt"
+	// smallFile := "tinyFile.txt"
 	// mediumFile := "mediumFile.txt"
-	largeFile := "largeFile.txt"
+	// largeFile := "largeFile.txt"
 	dorisFile := "dorisFile.txt"
 	eveFile := "eveFile.txt"
 	// frankFile := "frankFile.txt"
