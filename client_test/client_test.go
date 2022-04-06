@@ -252,7 +252,13 @@ var _ = Describe("Client Tests", func() {
 			_, err = bob.LoadFile(bobFile)
 			Expect(err).ToNot(BeNil())
 
+			err = bob.StoreFile(bobFile,[]byte("abc"))
+			Expect(err).ToNot(BeNil())
+
 			_, err = charles.LoadFile(charlesFile)
+			Expect(err).ToNot(BeNil())
+
+			err = charles.StoreFile(charlesFile,[]byte("abc"))
 			Expect(err).ToNot(BeNil())
 
 			userlib.DebugMsg("Checking that the revoked users cannot append to the file.")
