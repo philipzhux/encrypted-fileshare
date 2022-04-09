@@ -293,42 +293,42 @@ var _ = Describe("Client Tests", func() {
 		// 	state2 := map_copy(userlib.DatastoreGetMap())
 		// 	Expect(state2).ToNot(Equal(state1))
 		// })
-		Specify("INDCPA for share and revoke", func() {
-			userlib.DebugMsg("Initializing users Alice, Bob, and Charlie.")
-			alice, err = client.InitUser("alice", defaultPassword)
-			Expect(err).To(BeNil())
+		// Specify("INDCPA for share and revoke", func() {
+		// 	userlib.DebugMsg("Initializing users Alice, Bob, and Charlie.")
+		// 	alice, err = client.InitUser("alice", defaultPassword)
+		// 	Expect(err).To(BeNil())
 
-			bob, err = client.InitUser("bob", defaultPassword)
-			Expect(err).To(BeNil())
+		// 	bob, err = client.InitUser("bob", defaultPassword)
+		// 	Expect(err).To(BeNil())
 
-			charles, err = client.InitUser("charles", defaultPassword)
-			Expect(err).To(BeNil())
+		// 	charles, err = client.InitUser("charles", defaultPassword)
+		// 	Expect(err).To(BeNil())
 
-			userlib.DebugMsg("Alice storing file %s with content: %s", aliceFile, contentOne)
-			alice.StoreFile(aliceFile, []byte(contentOne))
+		// 	userlib.DebugMsg("Alice storing file %s with content: %s", aliceFile, contentOne)
+		// 	alice.StoreFile(aliceFile, []byte(contentOne))
 
-			userlib.DebugMsg("Alice creating invite for Bob for file %s, and Bob accepting invite under name %s.", aliceFile, bobFile)
+		// 	userlib.DebugMsg("Alice creating invite for Bob for file %s, and Bob accepting invite under name %s.", aliceFile, bobFile)
 
-			invite, err := alice.CreateInvitation(aliceFile, "bob")
-			Expect(err).To(BeNil())
+		// 	invite, err := alice.CreateInvitation(aliceFile, "bob")
+		// 	Expect(err).To(BeNil())
 
-			err = bob.AcceptInvitation("alice", invite, bobFile)
-			Expect(err).To(BeNil())
+		// 	err = bob.AcceptInvitation("alice", invite, bobFile)
+		// 	Expect(err).To(BeNil())
 
-			userlib.DebugMsg("Bob creating invite for Charles for file %s, and Charlie accepting invite under name %s.", bobFile, charlesFile)
-			invite, err = bob.CreateInvitation(bobFile, "charles")
-			Expect(err).To(BeNil())
+		// 	userlib.DebugMsg("Bob creating invite for Charles for file %s, and Charlie accepting invite under name %s.", bobFile, charlesFile)
+		// 	invite, err = bob.CreateInvitation(bobFile, "charles")
+		// 	Expect(err).To(BeNil())
 
-			err = charles.AcceptInvitation("bob", invite, charlesFile)
-			Expect(err).To(BeNil())
-			key1 := map_keys(userlib.DatastoreGetMap())
-			userlib.DebugMsg("Alice revoking Bob's access from %s.", aliceFile)
-			err = alice.RevokeAccess(aliceFile, "bob")
-			Expect(err).To(BeNil())
-			key2 := map_keys(userlib.DatastoreGetMap())
-			Expect(key1).ToNot(Equal(key2))
+		// 	err = charles.AcceptInvitation("bob", invite, charlesFile)
+		// 	Expect(err).To(BeNil())
+		// 	key1 := map_keys(userlib.DatastoreGetMap())
+		// 	userlib.DebugMsg("Alice revoking Bob's access from %s.", aliceFile)
+		// 	err = alice.RevokeAccess(aliceFile, "bob")
+		// 	Expect(err).To(BeNil())
+		// 	key2 := map_keys(userlib.DatastoreGetMap())
+		// 	Expect(key1).ToNot(Equal(key2))
 
-		})
+		// })
 
 	})
 
