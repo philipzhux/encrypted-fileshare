@@ -153,6 +153,24 @@ var _ = Describe("Client Tests", func() {
 			Expect(data).To(Equal([]byte(contentOne + contentTwo + contentThree)))
 		})
 
+		Specify("Basic Test: Testing Unauthorized Store/Load/Append.", func() {
+			userlib.DebugMsg("Initializing user Alice.")
+			alice, _ = client.InitUser("alice", defaultPassword)
+			Expect(err).To(BeNil())
+
+			userlib.DebugMsg("Storing file data: %s", contentOne)
+			err = alice.StoreFile(aliceFile, []byte(contentOne))
+			Expect(err).To(BeNil())
+
+			
+			alice_m, _ := client.InitUser("alice", "dd")
+			userlib.DebugMsg("Loading file...")
+			data, err := alice_m.LoadFile(aliceFile)
+			Expect(err).ToNot(BeNil())
+			Expect(data).To(BeNil())
+			//Expect(data).ToNot(Equal([]byte(contentOne)))
+		})
+
 		Specify("Basic Test: Testing Create/Accept Invite Functionality with multiple users and multiple instances.", func() {
 			userlib.DebugMsg("Initializing users Alice (aliceDesktop) and Bob.")
 			aliceDesktop, err = client.InitUser("alice", defaultPassword)
