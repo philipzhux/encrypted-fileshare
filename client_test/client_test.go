@@ -153,23 +153,89 @@ var _ = Describe("Client Tests", func() {
 			Expect(data).To(Equal([]byte(contentOne + contentTwo + contentThree)))
 		})
 
-		Specify("Basic Test: Testing Unauthorized Store/Load/Append.", func() {
+
+		Specify("Basic Test: Testing Multiple User Store/Load/Append.", func() {
 			userlib.DebugMsg("Initializing user Alice.")
-			alice, _ = client.InitUser("alice", defaultPassword)
+			alice, err = client.InitUser("alice", defaultPassword)
+			Expect(err).To(BeNil())
+
+			userlib.DebugMsg("Initializing user Bob.")
+			bob, err = client.InitUser("bob", defaultPassword)
+			Expect(err).To(BeNil())
+
+			userlib.DebugMsg("Initializing user Charles.")
+			charles, err = client.InitUser("charles", defaultPassword)
 			Expect(err).To(BeNil())
 
 			userlib.DebugMsg("Storing file data: %s", contentOne)
 			err = alice.StoreFile(aliceFile, []byte(contentOne))
 			Expect(err).To(BeNil())
 
-			
-			alice_m, _ := client.InitUser("alice", "dd")
+			userlib.DebugMsg("Storing file data: %s", contentTwo)
+			err = bob.StoreFile(bobFile, []byte(contentTwo))
+			Expect(err).To(BeNil())			
+
+			userlib.DebugMsg("Storing file data: %s", contentThree)
+			err = charles.StoreFile(charlesFile, []byte(contentThree))
+			Expect(err).To(BeNil())
+
+			userlib.DebugMsg("Appending file data: %s", contentTwo)
+			err = alice.AppendToFile(aliceFile, []byte(contentTwo))
+			Expect(err).To(BeNil())
+
+			userlib.DebugMsg("Appending file data: %s", contentThree)
+			err = alice.AppendToFile(aliceFile, []byte(contentThree))
+			Expect(err).To(BeNil())
+
+			userlib.DebugMsg("Appending file data: %s", contentOne)
+			err = bob.AppendToFile(bobFile, []byte(contentOne))
+			Expect(err).To(BeNil())
+
+			userlib.DebugMsg("Appending file data: %s", contentThree)
+			err = bob.AppendToFile(bobFile, []byte(contentThree))
+			Expect(err).To(BeNil())
+
+
+
+			userlib.DebugMsg("Appending file data: %s", contentTwo)
+			err = charles.AppendToFile(charlesFile, []byte(contentTwo))
+			Expect(err).To(BeNil())
+
+			userlib.DebugMsg("Appending file data: %s", contentOne)
+			err = charles.AppendToFile(charlesFile, []byte(contentOne))
+			Expect(err).To(BeNil())
+
 			userlib.DebugMsg("Loading file...")
-			data, err := alice_m.LoadFile(aliceFile)
-			Expect(err).ToNot(BeNil())
-			Expect(data).To(BeNil())
-			//Expect(data).ToNot(Equal([]byte(contentOne)))
+			data, err := alice.LoadFile(aliceFile)
+			Expect(err).To(BeNil())
+			Expect(data).To(Equal([]byte(contentOne + contentTwo + contentThree)))
+
+			data, err = bob.LoadFile(bobFile)
+			Expect(err).To(BeNil())
+			Expect(data).To(Equal([]byte(contentTwo + contentOne + contentThree)))
+
+			data, err = charles.LoadFile(charlesFile)
+			Expect(err).To(BeNil())
+			Expect(data).To(Equal([]byte(contentThree + contentTwo + contentOne)))
 		})
+
+		// Specify("Basic Test: Testing Unauthorized Store/Load/Append.", func() {
+		// 	userlib.DebugMsg("Initializing user Alice.")
+		// 	alice, err = client.InitUser("alice", defaultPassword)
+		// 	Expect(err).To(BeNil())
+
+		// 	userlib.DebugMsg("Storing file data: %s", contentOne)
+		// 	err = alice.StoreFile(aliceFile, []byte(contentOne))
+		// 	Expect(err).To(BeNil())
+
+			
+		// 	_, err := client.InitUser("alice", "dd")
+		// 	Expect(err).ToNot(BeNil())
+			
+		// })
+
+
+		
 
 		Specify("Basic Test: Testing Create/Accept Invite Functionality with multiple users and multiple instances.", func() {
 			userlib.DebugMsg("Initializing users Alice (aliceDesktop) and Bob.")
