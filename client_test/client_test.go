@@ -86,7 +86,7 @@ var _ = Describe("Client Tests", func() {
 	bobFile := "bobFile.txt"
 	charlesFile := "charlesFile.txt"
 	// tinyFile := "smallFile.txt"
-	smallFile := "tinyFile.txt"
+	// smallFile := "tinyFile.txt"
 	// mediumFile := "mediumFile.txt"
 	largeFile := "largeFile.txt"
 	dorisFile := "dorisFile.txt"
@@ -544,28 +544,28 @@ var _ = Describe("Client Tests", func() {
 	})
 	Describe("Efficiency Tests", func() {
 		Specify("Efficiency Test: Append Efficiency", func() {
-
+			i:=0
 			userlib.DebugMsg("Initializing users Alice.")
 			alice, err = client.InitUser("alice", defaultPassword)
 			Expect(err).To(BeNil())
 
 			err = alice.StoreFile(largeFile, []byte(strings.Repeat("#", 1<<27))) //128MB
 			Expect(err).To(BeNil())
+			var old_rec, new_rec, old_bw, min_diff int
+			min_diff = 1<<27
+			old_rec = 0
+			for i<1<<10 {
+				old_bw = userlib.DatastoreGetBandwidth()
+				err = alice.AppendToFile(largeFile, []byte(strings.Repeat("#", 1<<10))) //1KB
+				Expect(err).To(BeNil())
+				new_rec = userlib.DatastoreGetBandwidth() - old_bw
+				if new_rec-old_rec<min_diff {
+					min_diff = new_rec-old_rec
+				}
+				Expect(new_rec-old_rec<=2*min_diff).To(BeEquivalentTo(true))
+				i++
+			}
 
-			old_bw := userlib.DatastoreGetBandwidth()
-			err = alice.AppendToFile(largeFile, []byte(strings.Repeat("#", 1<<7))) //128B
-			Expect(err).To(BeNil())
-			bw_large := userlib.DatastoreGetBandwidth() - old_bw
-
-			err = alice.StoreFile(smallFile, []byte(strings.Repeat("#", 1<<7))) //128B
-			Expect(err).To(BeNil())
-
-			old_bw = userlib.DatastoreGetBandwidth()
-			err = alice.AppendToFile(smallFile, []byte(strings.Repeat("#", 1<<9))) //512B
-			Expect(err).To(BeNil())
-			bw_small := userlib.DatastoreGetBandwidth() - old_bw
-
-			Expect(bw_large < bw_small).To(Equal(true))
 
 		})
 	})
