@@ -525,6 +525,60 @@ var _ = Describe("Client Tests", func() {
 			_, err := alice.LoadFile(aliceFile)
 			Expect(err).ToNot(BeNil())
 		})
+
+		Specify("Integrity Test: Exchange Attack", func() {
+			ds := userlib.DatastoreGetMap()
+			var changed_uuid_1 userlib.UUID
+			var changed_uuid_2 userlib.UUID
+			userlib.DebugMsg("Initializing users Alice.")
+			alice, err = client.InitUser("alice", defaultPassword)
+			Expect(err).To(BeNil())
+
+			userlib.DebugMsg("Alice storing file %s with content %s.",aliceFile,contentOne)
+			err = alice.StoreFile(aliceFile, []byte(contentOne))
+			Expect(err).To(BeNil())
+
+			userlib.DebugMsg("Alice storing file %s with content %s.",bobFile,contentThree)
+			err = alice.StoreFile(bobFile, []byte(contentThree))
+			Expect(err).To(BeNil())
+
+			userlib.DebugMsg("Alice appending file A with content %s.", contentTwo)
+			state1 := map_copy(ds)
+			err = alice.AppendToFile(aliceFile, []byte(contentTwo))
+			Expect(err).To(BeNil())
+
+			
+			for k := range ds {
+				if _, ok := state1[k]; !ok {
+					 changed_uuid_1 = k
+					break
+				}
+			}
+
+			userlib.DebugMsg("Alice appending bobFile with content 123456k.")
+			state2 := map_copy(ds)
+
+			err = alice.AppendToFile(bobFile, []byte("123456k"))
+			Expect(err).To(BeNil())
+
+			
+			for k := range ds {
+				if _, ok := state2[k]; !ok {
+					changed_uuid_2 = k
+					break
+				}
+			}
+
+			userlib.DebugMsg("Exchanging changed datastore.")
+			ds[changed_uuid_1], ds[changed_uuid_2] = ds[changed_uuid_2], ds[changed_uuid_1]
+
+			userlib.DebugMsg("Expect error.")
+			_, err = alice.LoadFile(aliceFile)
+			Expect(err).ToNot(BeNil())
+
+			_, err = alice.LoadFile(bobFile)
+			Expect(err).ToNot(BeNil())
+		})
 	})
 
 	Describe("Namespace Tests", func() {
