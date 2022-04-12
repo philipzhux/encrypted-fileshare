@@ -378,6 +378,27 @@ var _ = Describe("Client Tests", func() {
 			Expect(err).ToNot(BeNil())
 		})
 
+		Specify("Corner case ~: Empty append", func() {
+			userlib.DebugMsg("Initializing users Alice and Bob.")
+			alice, err = client.InitUser("alice", defaultPassword)
+			Expect(err).To(BeNil())
+			bob, err = client.InitUser("bob", defaultPassword)
+			Expect(err).To(BeNil())
+			err = alice.StoreFile(aliceFile,[]byte(contentThree))
+			Expect(err).To(BeNil())
+
+			err = alice.AppendToFile(aliceFile,[]byte(""))
+			Expect(err).To(BeNil())
+
+			content, err := alice.LoadFile(aliceFile)
+			Expect(err).To(BeNil())
+			Expect(content).To(Equal([]byte(contentThree)))
+		})
+
+
+
+
+
 
 	})
 
@@ -677,7 +698,7 @@ var _ = Describe("Client Tests", func() {
 			Expect(err).To(BeNil())
 			bw_small := userlib.DatastoreGetBandwidth() - old_bw
 
-			Expect(bw_large>>10 < bw_small).To(Equal(true))
+			Expect(bw_large>>10).To(BeNumerically("<",bw_small))
 
 		})
 	})

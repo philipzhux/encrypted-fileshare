@@ -511,6 +511,9 @@ func (userdata *User) AppendToFile(filename string, content []byte) error {
 	if err!=nil {
 		return errors.New(strings.ToTitle("Search file error"))
 	}
+	if len(content)==0 {
+		return nil
+	}
 	file_uuid_key := first(userlib.HashKDF(file_root_key,[]byte("file_uuid_key")))[:16]
 	file_hmac_key := first(userlib.HashKDF(file_root_key,[]byte("file_hmac_key")))[:16]
 	file_enc_key := first(userlib.HashKDF(file_root_key,[]byte("file_enc_key")))[:16]
