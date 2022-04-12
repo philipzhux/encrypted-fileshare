@@ -404,7 +404,8 @@ func (userdata *User) searchFile(filename string) (err error, owner string, real
 		if !ok {
 			return errors.New(strings.ToTitle("Shared file's key signature not found")),"","",nil
 		}
-		owner_b,err_owner := getAndVerify(fmt.Sprintf("/accepted_share/%s/owner",filename),u.user_uuid_hmac_key,nil)
+		owner_enc,err_owner := getAndVerify(fmt.Sprintf("/accepted_share/%s/owner",filename),u.user_uuid_hmac_key,nil)
+		owner_b := userlib.SymDec(u.user_share_key,owner_enc)
 		owner = string(owner_b)
 		if err_owner!= nil {
 			return errors.New(strings.ToTitle("Corrupted owner record")),"","",nil
@@ -777,7 +778,8 @@ func (userdata *User) AcceptInvitation(senderUsername string, invitationPtr uuid
 	file_key_signature_uuid_b,_ := json.Marshal(payload_ii.File_key_signature_uuid)
 	setAndHmac(fmt.Sprintf("/accepted_share/%s/enc_file_key",filename),u.user_uuid_hmac_key,nil,file_key_uuid_b)
 	setAndHmac(fmt.Sprintf("/accepted_share/%s/signature",filename),u.user_uuid_hmac_key,nil,file_key_signature_uuid_b)
-	setAndHmac(fmt.Sprintf("/accepted_share/%s/owner",filename),u.user_uuid_hmac_key,nil,[]byte(payload_ii.Owner))
+	owner_enc := userlib.SymEnc(u.user_share_key,userlib.RandomBytes(16),[]byte(payload_ii.Owner))
+	setAndHmac(fmt.Sprintf("/accepted_share/%s/owner",filename),u.user_uuid_hmac_key,nil,owner_enc)
 	real_name_enc := userlib.SymEnc(u.user_share_key[:16],userlib.RandomBytes(16),[]byte(payload_i.Filename))
 	setAndHmac(fmt.Sprintf("/accepted_share/%s/filename",filename),u.user_uuid_hmac_key,u.user_hmac_master_key,real_name_enc)
 	file_root_key_enc,_ := userlib.DatastoreGet(payload_i.File_key_uuid)
