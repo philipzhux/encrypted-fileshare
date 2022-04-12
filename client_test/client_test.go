@@ -465,6 +465,27 @@ var _ = Describe("Client Tests", func() {
 
 		})
 
+		Specify("Extended Test: Testing Filename Length Confidentiality", func() {
+			userlib.DebugMsg("Initializing users Alice.")
+			alice, err = client.InitUser("alice", defaultPassword)
+			Expect(err).To(BeNil())
+
+			userlib.DebugMsg("Alice storing file with short filename")
+			bw1_prev := userlib.DatastoreGetBandwidth()
+			err = alice.StoreFile(strings.Repeat("#", 1), []byte{})
+			Expect(err).To(BeNil())
+			bw1 := userlib.DatastoreGetBandwidth() - bw1_prev
+
+			userlib.DebugMsg("Alice storing file with extremely long file name")
+			bw2_prev := userlib.DatastoreGetBandwidth()
+			err = alice.StoreFile(strings.Repeat("#", 1<<22), []byte{})
+			Expect(err).To(BeNil())
+			bw2 := userlib.DatastoreGetBandwidth() - bw2_prev
+
+			userlib.DebugMsg("Check bandwidth")
+			Expect(bw2 / bw1).To(BeNumerically("<", 2))
+		})
+
 	})
 
 	Describe("Integrity Tests", func() {
