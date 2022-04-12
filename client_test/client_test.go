@@ -471,11 +471,15 @@ var _ = Describe("Client Tests", func() {
 		Specify("Integrity Tests: User ", func() {
 			ds := userlib.DatastoreGetMap()
 			userlib.DebugMsg("Initializing users Alice time 1.")
+			prev:=map_copy(userlib.DatastoreGetMap())
 			alice, err = client.InitUser("alice", defaultPassword)
 			Expect(err).To(BeNil())
 			userlib.DebugMsg("Tamper datastore.")
 			for k := range ds {
-				ds[k] = []byte("randomstuff")
+				if _, ok := prev[k]; !ok {
+					ds[k] = []byte("randomstuff")
+					continue
+				}
 			}
 			userlib.DebugMsg("Trying to reinitualize users Alice second time.")
 			alice, err = client.InitUser("alice", defaultPassword)
@@ -486,11 +490,15 @@ var _ = Describe("Client Tests", func() {
 			userlib.DebugMsg("Initializing users Alice.")
 			alice, err = client.InitUser("alice", defaultPassword)
 			Expect(err).To(BeNil())
+			prev:=map_copy(userlib.DatastoreGetMap())
 			userlib.DebugMsg("Alice storing file %s with content: %s, time 1", aliceFile, contentOne)
 			alice.StoreFile(aliceFile, []byte(contentOne))
-			userlib.DebugMsg("Tamper datastore.")
+			userlib.DebugMsg("Tamper new datastore.")
 			for k := range ds {
-				ds[k] = []byte("randomstuff")
+				if _, ok := prev[k]; !ok {
+					ds[k] = []byte("randomstuff")
+					continue
+				}
 			}
 			userlib.DebugMsg("Trying to load file")
 			_, err := alice.LoadFile(aliceFile)
