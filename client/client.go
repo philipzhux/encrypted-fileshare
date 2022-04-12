@@ -136,6 +136,7 @@ type Share_Node struct {
 	Sharee string
 	Enc_key_uuid uuid.UUID
 	Enc_sign_uuid uuid.UUID
+	waiting bool
 }
 
 // NOTE: The following methods have toy (insecure!) implementations.
@@ -143,6 +144,10 @@ func first(val []byte, _ error) []byte {
     return val
 }
 func InitUser(username string, password string) (userdataptr *User, err error) {
+	// if len(username)==0 || len(password)==0 {
+	if len(username)==0 {
+		return nil, errors.New(strings.ToTitle("invalid username/password"))
+	}
 	_, ok := userlib.KeystoreGet(fmt.Sprintf("/%s/sign_pk", username))
 	if ok {
 		return nil, errors.New(strings.ToTitle("user already exists"))
@@ -593,7 +598,10 @@ func (userdata *User) CreateInvitation(filename string, recipientUsername string
 	if err!=nil {
 		return uuid.UUID{},err
 	}
-	//file_uuid_key := first(userlib.HashKDF(file_root_key,[]byte("file_uuid_key")))[:16]
+	file_uuid_key := first(userlib.HashKDF(file_root_key,[]byte("file_uuid_key")))[:16]
+	file_hmac_key := first(userlib.HashKDF(file_root_key,[]byte("file_hmac_key")))[:16]
+	file_enc_key := first(userlib.HashKDF(file_root_key,[]byte("file_enc_key")))[:16]
+	
 	
 	/* append recipientUsername to /user_name/file_name/share_to_list */
 
@@ -687,12 +695,46 @@ func (userdata *User) CreateInvitation(filename string, recipientUsername string
 	}
 	////userlib.DebugMsg("share_b at create share: %s", hex.EncodeToString(share_b))
 	userlib.DatastoreSet(share_struct_uuid,share_b)
+	// var wait_list []string
+	// var wait_list_enc []byte
+	// wait_list_b := userlib.SymDec(file_enc_key,wait_list_enc)
+	// //userlib.DebugMsg("getting %s (b) as: %v",fmt.Sprintf("/%s/share_map/%s",real_name,u.user_name),share_list_b)
+	// json.Unmarshal(wait_list_b,&wait_list)
+	// wait_list = append(wait_list, recipientUsername)
+	// wait_list_b,_ = json.Marshal(wait_list)
+	// wait_list_enc = userlib.SymEnc(file_enc_key,userlib.RandomBytes(16),wait_list_b)
+	// setAndHmac(fmt.Sprintf("/%s/wait_list/%s",real_name,u.user_name),file_uuid_key,file_hmac_key,wait_list_enc)
+	
+	share_list_enc , err_gsn := getAndVerify(fmt.Sprintf("/%s/share_map/%s",payload_i.Filename,u.user_name),file_uuid_key,file_hmac_key)
+	if err_gsn != nil {
+		return uuid.UUID{},err_gsn
+	}
+	share_list_b := userlib.SymDec(file_enc_key,share_list_enc)
+	var share_list []Share_Node
+	json.Unmarshal(share_list_b,&share_list)
+	
+	share_list = append(share_list,Share_Node{
+		Sharee: recipientUsername,
+		Enc_key_uuid: file_key_enc_uuid,
+		Enc_sign_uuid:file_key_sign_uuid,
+		waiting: true,
+	})
+	//userlib.DebugMsg("share_list of entry %s after accept share: %v",fmt.Sprintf("/%s/share_map/%s",payload_i.Filename,senderUsername),share_list)
+	share_list_b,_ = json.Marshal(share_list)
+	//userlib.DebugMsg("setting %s (b) to be: %v",fmt.Sprintf("/%s/share_map/%s",payload_i.Filename,senderUsername),share_list_b)
+	share_list_enc = userlib.SymEnc(file_enc_key,userlib.RandomBytes(16),share_list_b)
+	setAndHmac(fmt.Sprintf("/%s/share_map/%s",payload_i.Filename,u.user_name),file_uuid_key,file_hmac_key,share_list_enc)
+	
 	return share_struct_uuid,nil
 	
 }
 
 func (userdata *User) AcceptInvitation(senderUsername string, invitationPtr uuid.UUID, filename string) error {
 	u := *userdata
+	not_exist_err,_,_,_ := u.searchFile(filename)
+	if(not_exist_err==nil){
+		return errors.New(strings.ToTitle("filename already exists"))
+	}
 	sender_sign_pk,ok := userlib.KeystoreGet(fmt.Sprintf("/%s/sign_pk",senderUsername))
 	if !ok {
 		return errors.New(strings.ToTitle("Invalid senderUsername"))
@@ -751,11 +793,19 @@ func (userdata *User) AcceptInvitation(senderUsername string, invitationPtr uuid
 	var share_list []Share_Node
 	json.Unmarshal(share_list_b,&share_list)
 	//userlib.DebugMsg("share_list of entry %s before accept share: %v",fmt.Sprintf("/%s/share_map/%s",payload_i.Filename,senderUsername),share_list)
-	share_list = append(share_list,Share_Node{
-		Sharee: u.user_name,
-		Enc_key_uuid: payload_i.File_key_uuid,
-		Enc_sign_uuid: payload_ii.File_key_signature_uuid,
-	})
+	for idx,share_node := range share_list {
+		if share_node.Sharee==u.user_name {
+			share_list[idx].waiting = false
+			break
+		}
+	}
+	
+	
+	// share_list = append(share_list,Share_Node{
+	// 	Sharee: u.user_name,
+	// 	Enc_key_uuid: payload_i.File_key_uuid,
+	// 	Enc_sign_uuid: payload_ii.File_key_signature_uuid,
+	// })
 	//userlib.DebugMsg("share_list of entry %s after accept share: %v",fmt.Sprintf("/%s/share_map/%s",payload_i.Filename,senderUsername),share_list)
 	share_list_b,_ = json.Marshal(share_list)
 	//userlib.DebugMsg("setting %s (b) to be: %v",fmt.Sprintf("/%s/share_map/%s",payload_i.Filename,senderUsername),share_list_b)
@@ -842,6 +892,11 @@ func (userdata *User) RevokeAccess(filename string, recipientUsername string) er
 	var real_name string
 	var owner string
 	var err error
+	revoked_flag := false
+	_, ok := userlib.KeystoreGet(fmt.Sprintf("/%s/sign_pk", recipientUsername))
+	if !ok {
+		return errors.New(strings.ToTitle(fmt.Sprintf("Username %s does not exist",recipientUsername)))
+	}
 	err, owner,real_name, file_root_key = u.searchFile(filename)
 	if err!=nil {
 		return err
@@ -863,12 +918,35 @@ func (userdata *User) RevokeAccess(filename string, recipientUsername string) er
 	new_file_enc_key := first(userlib.HashKDF(new_file_root_key,[]byte("file_enc_key")))[:16]
 	new_file_len_key := first(userlib.HashKDF(new_file_root_key,[]byte("file_len_key")))[:16]
 	share_list_enc, _ := getAndVerify(fmt.Sprintf("/%s/share_map/%s",real_name,u.user_name),file_uuid_key,file_hmac_key)
+	// wait_list_enc, _ := getAndVerify(fmt.Sprintf("/%s/wait_list/%s",real_name,u.user_name),file_uuid_key,file_hmac_key)
 	////userlib.DebugMsg("getting %s (enc) as: %v",fmt.Sprintf("/%s/share_map/%s",real_name,u.user_name),share_list_enc)
 	var share_list,new_list []Share_Node
+	//var wait_list []string
 	share_list_b := userlib.SymDec(file_enc_key,share_list_enc)
+	// wait_list_b := userlib.SymDec(file_enc_key,wait_list_enc)
 	//userlib.DebugMsg("getting %s (b) as: %v",fmt.Sprintf("/%s/share_map/%s",real_name,u.user_name),share_list_b)
 	json.Unmarshal(share_list_b,&share_list)
+	//json.Unmarshal(wait_list_b,&wait_list)
 	//userlib.DebugMsg("share_list of entry %s upon revoke: %v",fmt.Sprintf("/%s/share_map/%s",real_name,u.user_name),share_list)
+	for _,iter_node := range share_list {
+		if iter_node.Sharee == recipientUsername {
+			revoked_flag = true
+			break
+		}
+	}
+	// for idx,uname := range wait_list {
+	// 	if uname == recipientUsername {
+	// 		wait_list[idx] = wait_list[len(wait_list)-1]
+	// 		wait_list = wait_list[:len(wait_list)-1]
+	// 		revoked_flag = true
+	// 	}
+	// }
+	// wait_list_b,_ = json.Marshal(wait_list)
+	// wait_list_enc = userlib.SymEnc(file_enc_key,userlib.RandomBytes(16),wait_list_b)
+	// setAndHmac(fmt.Sprintf("/%s/wait_list/%s",real_name,u.user_name),file_uuid_key,file_hmac_key,wait_list_enc)
+	if !revoked_flag {
+		return errors.New("Invoking unauthorized file")
+	}
 	for _,iter_node := range share_list {
 		if iter_node.Sharee == recipientUsername {
 			recursiveDeleteKey(iter_node,real_name,file_uuid_key,file_hmac_key,file_enc_key)
@@ -885,6 +963,8 @@ func (userdata *User) RevokeAccess(filename string, recipientUsername string) er
 	new_list_enc := userlib.SymEnc(file_enc_key,userlib.RandomBytes(16),new_list_b)
 	delete(fmt.Sprintf("/%s/share_map/%s",real_name,u.user_name),file_uuid_key,file_hmac_key)
 	setAndHmac(fmt.Sprintf("/%s/share_map/%s",real_name,u.user_name),new_file_uuid_key,new_file_hmac_key,new_list_enc)
+	// wait_list_enc = userlib.SymEnc(new_file_enc_key,userlib.RandomBytes(16),wait_list_b)
+	// setAndHmac(fmt.Sprintf("/%s/wait_list/%s",real_name,u.user_name),new_file_uuid_key,new_file_hmac_key,wait_list_enc)
 	new_file_root_key_enc, _ := userlib.PKEEnc(u.file_pk, file_root_key)
 	err_s := setAndHmac(fmt.Sprintf("/%s/enc_file_key",filename),u.user_uuid_hmac_key,u.user_hmac_master_key,new_file_root_key_enc)
 	if err_s!=nil {

@@ -1,3 +1,4 @@
+
 package client_test
 
 // You MUST NOT change these default imports.  ANY additional imports may
@@ -9,7 +10,7 @@ import (
 	_ "encoding/hex"
 	_ "errors"
 	_ "strconv"
-	// "strings"
+	 "strings"
 	"testing"
 
 	// A "dot" import is used here so that the functions in the ginko and gomega
@@ -86,9 +87,9 @@ var _ = Describe("Client Tests", func() {
 	bobFile := "bobFile.txt"
 	charlesFile := "charlesFile.txt"
 	// tinyFile := "smallFile.txt"
-	// smallFile := "tinyFile.txt"
+	smallFile := "tinyFile.txt"
 	// mediumFile := "mediumFile.txt"
-	// largeFile := "largeFile.txt"
+	largeFile := "largeFile.txt"
 	dorisFile := "dorisFile.txt"
 	eveFile := "eveFile.txt"
 	// frankFile := "frankFile.txt"
@@ -265,70 +266,183 @@ var _ = Describe("Client Tests", func() {
 			Expect(err).ToNot(BeNil())
 		})
 
+		Specify("Corner case I: Username reuse/collision", func() {
+			userlib.DebugMsg("Initializing user Alice.")
+			alice, err = client.InitUser("alice", defaultPassword)
+			Expect(err).To(BeNil())
+			userlib.DebugMsg("Initializing user Alice again.")
+			alice, err = client.InitUser("alice", defaultPassword)
+			Expect(err).ToNot(BeNil())
+		})
+
+		Specify("Corner case II: Empty Username", func() {
+			userlib.DebugMsg("Initializing user ''.")
+			alice, err = client.InitUser("", defaultPassword)
+			Expect(err).ToNot(BeNil())
+		})
+
+		// Specify("Corner case III: Empty PW", func() {
+		// 	userlib.DebugMsg("Initializing user ''.")
+		// 	alice, err = client.InitUser("alice", "")
+		// 	Expect(err).ToNot(BeNil())
+		// })
+
+		// Specify("Corner case IV: Non-existing user", func() {
+		// 	userlib.DebugMsg("Initializing user ''.")
+		// 	alice, err = client.InitUser("philip", "")
+		// 	Expect(err).ToNot(BeNil())
+		// })
+		
+		Specify("Corner case V: Sharing a file I don't have", func() {
+			userlib.DebugMsg("Initializing users Alice and Bob.")
+			alice, err = client.InitUser("alice", defaultPassword)
+			Expect(err).To(BeNil())
+
+			bob, err = client.InitUser("bob", defaultPassword)
+			Expect(err).To(BeNil())
+
+			_, err = alice.CreateInvitation(aliceFile, "bob")
+			Expect(err).ToNot(BeNil())
+		})
+
+		Specify("Corner case VI: Sharing a file to somebody that does not exists", func() {
+			userlib.DebugMsg("Initializing users Alice and Bob.")
+			alice, err = client.InitUser("alice", defaultPassword)
+			Expect(err).To(BeNil())
+
+			err = alice.StoreFile(aliceFile,[]byte(contentThree))
+			Expect(err).To(BeNil())
+
+			err = alice.StoreFile(aliceFile,[]byte(contentThree))
+			Expect(err).To(BeNil())
+
+			_, err = alice.CreateInvitation(aliceFile, "bob")
+			Expect(err).ToNot(BeNil())
+		})
+
+		Specify("Corner case VII: Accept share with name conflict", func() {
+			userlib.DebugMsg("Initializing users Alice and Bob.")
+			alice, err = client.InitUser("alice", defaultPassword)
+			Expect(err).To(BeNil())
+
+			err = alice.StoreFile(aliceFile,[]byte(contentThree))
+			Expect(err).To(BeNil())
+
+			bob, err = client.InitUser("bob", defaultPassword)
+			Expect(err).To(BeNil())
+
+			err = bob.StoreFile(bobFile,[]byte(contentThree))
+			Expect(err).To(BeNil())
+
+			invitation , err := alice.CreateInvitation(aliceFile, "bob")
+			Expect(err).To(BeNil())
+
+			err = bob.AcceptInvitation("alice", invitation, bobFile)
+			Expect(err).ToNot(BeNil())
+
+		})
+
+		Specify("Corner case ~: Wrong sender provied to invitation accept", func() {
+			userlib.DebugMsg("Initializing users Alice and Bob.")
+			alice, err = client.InitUser("alice", defaultPassword)
+			Expect(err).To(BeNil())
+
+			charles, err  = client.InitUser("charles",defaultPassword)
+			Expect(err).To(BeNil())
+
+			err = alice.StoreFile(aliceFile,[]byte(contentThree))
+			Expect(err).To(BeNil())
+
+			bob, err = client.InitUser("bob", defaultPassword)
+			Expect(err).To(BeNil())
+
+			// err = bob.StoreFile(bobFile,[]byte(contentThree))
+			// Expect(err).To(BeNil())
+
+			invitation , err := alice.CreateInvitation(aliceFile, "bob")
+			Expect(err).To(BeNil())
+
+			err = bob.AcceptInvitation("charles", invitation, bobFile)
+			Expect(err).ToNot(BeNil())
+
+		})
+
+		Specify("Corner case ~: Premature/Invalid revoke", func() {
+			userlib.DebugMsg("Initializing users Alice and Bob.")
+			alice, err = client.InitUser("alice", defaultPassword)
+			Expect(err).To(BeNil())
+			bob, err = client.InitUser("bob", defaultPassword)
+			Expect(err).To(BeNil())
+			userlib.DebugMsg("Alice revoking Bob's access from %s.", aliceFile)
+			err = alice.RevokeAccess(aliceFile, "bob")
+			Expect(err).ToNot(BeNil())
+		})
+
+
 	})
 
 	Describe("Confidentiality Tests", func() {
-		// Specify("INDCPA for user", func() {
-		// 	userlib.DebugMsg("Initializing users Alice time 1.")
-		// 	alice, err = client.InitUser("alice", defaultPassword)
-		// 	Expect(err).To(BeNil())
-		// 	state1 := map_copy(userlib.DatastoreGetMap())
-		// 	userlib.DatastoreClear()
-		// 	userlib.KeystoreClear()
-		// 	userlib.DebugMsg("Initializing users Alice time 2.")
-		// 	alice, err = client.InitUser("alice", defaultPassword)
-		// 	Expect(err).To(BeNil())
-		// 	state2 := map_copy(userlib.DatastoreGetMap())
-		// 	Expect(state2).ToNot(Equal(state1))
-		// })
-		// Specify("INDCPA for file", func() {
-		// 	userlib.DebugMsg("Initializing users Alice.")
-		// 	alice, err = client.InitUser("alice", defaultPassword)
-		// 	Expect(err).To(BeNil())
-		// 	userlib.DebugMsg("Alice storing file %s with content: %s, time 1", aliceFile, contentOne)
-		// 	alice.StoreFile(aliceFile, []byte(contentOne))
-		// 	state1 := map_copy(userlib.DatastoreGetMap())
-		// 	alice.StoreFile(aliceFile, []byte(contentOne))
-		// 	userlib.DebugMsg("Alice storing file %s with content: %s, time 2", aliceFile, contentOne)
-		// 	state2 := map_copy(userlib.DatastoreGetMap())
-		// 	Expect(state2).ToNot(Equal(state1))
-		// })
-		// Specify("INDCPA for share and revoke", func() {
-		// 	userlib.DebugMsg("Initializing users Alice, Bob, and Charlie.")
-		// 	alice, err = client.InitUser("alice", defaultPassword)
-		// 	Expect(err).To(BeNil())
+		Specify("INDCPA for user", func() {
+			userlib.DebugMsg("Initializing users Alice time 1.")
+			alice, err = client.InitUser("alice", defaultPassword)
+			Expect(err).To(BeNil())
+			state1 := map_copy(userlib.DatastoreGetMap())
+			userlib.DatastoreClear()
+			userlib.KeystoreClear()
+			userlib.DebugMsg("Initializing users Alice time 2.")
+			alice, err = client.InitUser("alice", defaultPassword)
+			Expect(err).To(BeNil())
+			state2 := map_copy(userlib.DatastoreGetMap())
+			Expect(state2).ToNot(Equal(state1))
+		})
+		Specify("INDCPA for file", func() {
+			userlib.DebugMsg("Initializing users Alice.")
+			alice, err = client.InitUser("alice", defaultPassword)
+			Expect(err).To(BeNil())
+			userlib.DebugMsg("Alice storing file %s with content: %s, time 1", aliceFile, contentOne)
+			alice.StoreFile(aliceFile, []byte(contentOne))
+			state1 := map_copy(userlib.DatastoreGetMap())
+			alice.StoreFile(aliceFile, []byte(contentOne))
+			userlib.DebugMsg("Alice storing file %s with content: %s, time 2", aliceFile, contentOne)
+			state2 := map_copy(userlib.DatastoreGetMap())
+			Expect(state2).ToNot(Equal(state1))
+		})
+		Specify("INDCPA for share and revoke", func() {
+			userlib.DebugMsg("Initializing users Alice, Bob, and Charlie.")
+			alice, err = client.InitUser("alice", defaultPassword)
+			Expect(err).To(BeNil())
 
-		// 	bob, err = client.InitUser("bob", defaultPassword)
-		// 	Expect(err).To(BeNil())
+			bob, err = client.InitUser("bob", defaultPassword)
+			Expect(err).To(BeNil())
 
-		// 	charles, err = client.InitUser("charles", defaultPassword)
-		// 	Expect(err).To(BeNil())
+			charles, err = client.InitUser("charles", defaultPassword)
+			Expect(err).To(BeNil())
 
-		// 	userlib.DebugMsg("Alice storing file %s with content: %s", aliceFile, contentOne)
-		// 	alice.StoreFile(aliceFile, []byte(contentOne))
+			userlib.DebugMsg("Alice storing file %s with content: %s", aliceFile, contentOne)
+			alice.StoreFile(aliceFile, []byte(contentOne))
 
-		// 	userlib.DebugMsg("Alice creating invite for Bob for file %s, and Bob accepting invite under name %s.", aliceFile, bobFile)
+			userlib.DebugMsg("Alice creating invite for Bob for file %s, and Bob accepting invite under name %s.", aliceFile, bobFile)
 
-		// 	invite, err := alice.CreateInvitation(aliceFile, "bob")
-		// 	Expect(err).To(BeNil())
+			invite, err := alice.CreateInvitation(aliceFile, "bob")
+			Expect(err).To(BeNil())
 
-		// 	err = bob.AcceptInvitation("alice", invite, bobFile)
-		// 	Expect(err).To(BeNil())
+			err = bob.AcceptInvitation("alice", invite, bobFile)
+			Expect(err).To(BeNil())
 
-		// 	userlib.DebugMsg("Bob creating invite for Charles for file %s, and Charlie accepting invite under name %s.", bobFile, charlesFile)
-		// 	invite, err = bob.CreateInvitation(bobFile, "charles")
-		// 	Expect(err).To(BeNil())
+			userlib.DebugMsg("Bob creating invite for Charles for file %s, and Charlie accepting invite under name %s.", bobFile, charlesFile)
+			invite, err = bob.CreateInvitation(bobFile, "charles")
+			Expect(err).To(BeNil())
 
-		// 	err = charles.AcceptInvitation("bob", invite, charlesFile)
-		// 	Expect(err).To(BeNil())
-		// 	key1 := map_keys(userlib.DatastoreGetMap())
-		// 	userlib.DebugMsg("Alice revoking Bob's access from %s.", aliceFile)
-		// 	err = alice.RevokeAccess(aliceFile, "bob")
-		// 	Expect(err).To(BeNil())
-		// 	key2 := map_keys(userlib.DatastoreGetMap())
-		// 	Expect(key1).ToNot(Equal(key2))
+			err = charles.AcceptInvitation("bob", invite, charlesFile)
+			Expect(err).To(BeNil())
+			key1 := map_keys(userlib.DatastoreGetMap())
+			userlib.DebugMsg("Alice revoking Bob's access from %s.", aliceFile)
+			err = alice.RevokeAccess(aliceFile, "bob")
+			Expect(err).To(BeNil())
+			key2 := map_keys(userlib.DatastoreGetMap())
+			Expect(key1).ToNot(Equal(key2))
 
-		// })
+		})
 
 	})
 
@@ -413,21 +527,33 @@ var _ = Describe("Client Tests", func() {
 			data, _ = alice.LoadFile(aliceFile)
 			Expect(data).To(Equal([]byte(contentOne)))
 		})
-		// Specify("Integrity Tests: File ", func() {
-		// 	userlib.DebugMsg("Initializing users Alice.")
-		// 	alice, err = client.InitUser("alice", defaultPassword)
-		// 	Expect(err).To(BeNil())
-		// 	userlib.DebugMsg("Alice storing file %s with content: %s, time 1", aliceFile, contentOne)
-		// 	alice.StoreFile(aliceFile, []byte(contentOne))
-		// 	userlib.DebugMsg("Clear datastore.")
-		// 	userlib.DatastoreClear()
-		// 	userlib.DebugMsg("Trying to load file")
-		// 	_, err := alice.LoadFile(aliceFile)
-		// 	Expect(err).ToNot(BeNil())
-		// })
+		Specify("Integrity Tests: File ", func() {
+			userlib.DebugMsg("Initializing users Alice.")
+			alice, err = client.InitUser("alice", defaultPassword)
+			Expect(err).To(BeNil())
+			userlib.DebugMsg("Alice storing file %s with content: %s, time 1", aliceFile, contentOne)
+			alice.StoreFile(aliceFile, []byte(contentOne))
+			userlib.DebugMsg("Clear datastore.")
+			userlib.DatastoreClear()
+			userlib.DebugMsg("Trying to load file")
+			_, err := alice.LoadFile(aliceFile)
+			Expect(err).ToNot(BeNil())
+		})
 	})
 
 	Describe("Session Tests", func() {
+		Specify("Session Test: Keystore Consistency", func() {
+			userlib.DebugMsg("Initializing users Alice.")
+			alice, err = client.InitUser("alice", defaultPassword)
+			Expect(err).To(BeNil())
+			old_len := len(userlib.KeystoreGetMap())
+			userlib.DebugMsg("Alice storing file %s with content %s.", aliceFile, contentOne)
+			err = alice.StoreFile(aliceFile, []byte(contentOne))
+			Expect(err).To(BeNil())
+			userlib.DebugMsg("Checking keystore consistency")
+			Expect(len(userlib.KeystoreGetMap())).To(Equal(old_len))
+		})
+
 		Specify("Session Test: Single User Multiple Devices", func() {
 			var data []byte
 			userlib.DebugMsg("Initializing users Alice.")
@@ -525,37 +651,37 @@ var _ = Describe("Client Tests", func() {
 			Expect(err).To(BeNil())
 			Expect(data).To(Equal([]byte(contentThree)))
 
+		})
 
+	})
+	Describe("Efficiency Tests", func() {
+		Specify("Efficiency Test: Append Efficiency", func() {
+
+			userlib.DebugMsg("Initializing users Alice.")
+			alice, err = client.InitUser("alice", defaultPassword)
+			Expect(err).To(BeNil())
+
+			err = alice.StoreFile(largeFile, []byte(strings.Repeat("#", 1<<26))) //64MB
+			Expect(err).To(BeNil())
+
+			old_bw := userlib.DatastoreGetBandwidth()
+			err = alice.AppendToFile(largeFile, []byte(strings.Repeat("#", 1))) //64MB
+			Expect(err).To(BeNil())
+			bw_large := userlib.DatastoreGetBandwidth() - old_bw
+
+			err = alice.StoreFile(smallFile, []byte(strings.Repeat("#", 1<<10))) //1KB
+			Expect(err).To(BeNil())
+
+			old_bw = userlib.DatastoreGetBandwidth()
+			err = alice.AppendToFile(smallFile, []byte(strings.Repeat("#", 1))) //64MB
+			Expect(err).To(BeNil())
+			bw_small := userlib.DatastoreGetBandwidth() - old_bw
+
+			Expect(bw_large>>10 < bw_small).To(Equal(true))
 
 		})
 	})
-	// Describe("Efficiency Tests", func() {
-	// 	Specify("Efficiency Test: Append Efficiency", func() {
 
-	// 		userlib.DebugMsg("Initializing users Alice.")
-	// 		alice, err = client.InitUser("alice", defaultPassword)
-	// 		Expect(err).To(BeNil())
-
-	// 		err = alice.StoreFile(largeFile, []byte(strings.Repeat("#", 1<<26))) //64MB
-	// 		Expect(err).To(BeNil())
-
-	// 		old_bw := userlib.DatastoreGetBandwidth()
-	// 		err = alice.AppendToFile(largeFile, []byte(strings.Repeat("#", 1))) //64MB
-	// 		Expect(err).To(BeNil())
-	// 		bw_large := userlib.DatastoreGetBandwidth() - old_bw
-
-	// 		err = alice.StoreFile(smallFile, []byte(strings.Repeat("#", 1<<10))) //1KB
-	// 		Expect(err).To(BeNil())
-
-	// 		old_bw = userlib.DatastoreGetBandwidth()
-	// 		err = alice.AppendToFile(smallFile, []byte(strings.Repeat("#", 1))) //64MB
-	// 		Expect(err).To(BeNil())
-	// 		bw_small := userlib.DatastoreGetBandwidth() - old_bw
-
-	// 		Expect(bw_large>>10 < bw_small).To(Equal(true))
-
-	// 	})
-	// })
 })
 
 /*
@@ -567,3 +693,4 @@ for k, v := range myMap {
 	values = append(values, v)
 }
 */
+
